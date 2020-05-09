@@ -80,5 +80,4 @@ class weaksis(object):
 
 
 
-     return 0
 
