@@ -33,7 +33,7 @@ pi      = np.pi
 lamda =0.5
 fac   =(vc*vc*ckg)/(4.*pi*Gg*ckm)
 
-shapen     = 0.01
+shapen     = 0.1
 ngdens     = 50.0
 class weaksis(object):
   def __init__(self,vrot=None,vdis=None,zl=None,zs=None):
@@ -161,7 +161,31 @@ class weaksis(object):
            gmt    = np.random.normal(loc=Totalkappa[i,j],scale=shapen,size=ngals)
            Totalkappa[i,j] = np.mean(gmt)
      return  Totalkappa
- 
+  def TotalESD(self,xi1,xi2,phi,noise):
+     xv,yv  = np.meshgrid(xi1,xi2)
+     xv  = xv*pi/180.0/60.0
+     yv  = yv*pi/180.0/60.0
+     dl  = self.Da(self.zl)
+     ds  = self.Da(self.zs)
+     nx    = len(xi1)
+     ny    = len(xi2)
+     nrbin = 30
+     Sigc  = fac*ds/(dl*(ds-dl))/(1.0+self.zl)/(1.0+self.zl)
+     esd2d = Sigc*self.TotalKappa(xi1,xi2,phi,False)
+     Rlow  = 0.0
+     Rhig  = np.max(dl*xi1*pi/180.0/60.0)
+     step  = Rhig/float(nrbin)
+     Rp2d  = dl*np.sqrt(xi1**2+xi2**2)*pi/180.0/60.0
+     Rp    = np.zeros(nrbin)
+     esd   = np.zeros(nrbin)
+     error = np.zeros(nrbin)
+     for i in range(nrbin):
+	 ixa   = Rp2d>=Rlow+step*float(i)
+	 ixb   = Rp2d<=Rlow+step*float(i+1)
+	 Rp[i] = 0.5*(Rlow+step*float(i)+Rlow+step*float(i+1))
+	 esd[i]= np.mean(esd2d[ixa&ixb])
+     res = {'Rp':Rp,'ESD':esd,'ERROR':error}
+     return res
   def TotalShear(self,xi1,xi2,phi,noise):
      
     nx  = len(xi1)

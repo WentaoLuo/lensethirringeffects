@@ -45,22 +45,29 @@ def plot_shears_kappa(kappa,shear1,shear2):
 #----------------------------------------------------
 def SIS():
   xi  = np.linspace(0.01,10,10)
-  xi1 = np.linspace(-32,32,64)
-  xi2 = np.linspace(-32,32,64)
+  xi1 = np.linspace(-32,32,128)
+  xi2 = np.linspace(-32,32,128)
 
   vdis= 300.0
   vrot= 0.0
+  phi= 0
   zl  = 0.2
   zs  = 0.4
   noise = True
   #noise = False
-  wlsis= wl.weaksis(vrot,vdis,zl,zs)
-  esd  = wlsis.sisESD(xi,noise)
-  plt.errorbar(esd['Rp'],esd['ESD'],yerr=esd['ERROR'],fmt='k.',ms=15,elinewidth=2.5)
+  wlsis  = wl.weaksis(vrot,vdis,zl,zs)
+  esd    = wlsis.sisESD(xi,noise)
+  esdtot = wlsis.TotalESD(xi1,xi2,phi,noise)
+  plt.errorbar(esd['Rp'],esd['ESD'],yerr=esd['ERROR'],fmt='k.',ms=15,elinewidth=2.5,label='SIS with noise')
+  #plt.errorbar(esd['Rp'],esd['ESD'],yerr=esd['ERROR'],fmt='k.',ms=15,elinewidth=2.5)
+  #plt.plot(esd['Rp'],esd['ESD'],'k-',linewidth=3,label='SIS')
+  plt.plot(esdtot['Rp'],esdtot['ESD'],'k--',linewidth=3,label='Total')
   #plt.yscale('log')
   #plt.xscale('log')
+  plt.xlim(0.05,1.5)
   plt.xlabel(r'$\mathrm{R}(Mpc/h)$')
   plt.ylabel(r'$\mathrm{ESD(M_{\odot}h/pc^2)}$')
+  plt.legend()
   plt.show()
 
   #plt.ylabel(r'$\mathrm{ESD(M_{\odot}h/pc^2)}$')
@@ -68,10 +75,10 @@ def SIS():
   gm   = wlsis.sisShear(xi1,xi2,noise)
   shear1 = gm['f_1']
   shear2 = gm['f_2']
-  plot_shears_kappa(kap,shear1,shear2)
-  plt.xlim(0,64)
-  plt.ylim(0,64)
-  plt.show()
+  #plot_shears_kappa(kap,shear1,shear2)
+  #plt.xlim(0,64)
+  #plt.ylim(0,64)
+  #plt.show()
 def GRM():
   xi1 = np.linspace(-32,32,64)
   xi2 = np.linspace(-32,32,64)
@@ -123,7 +130,7 @@ def Total():
   
 
 if __name__=="__main__":
-    #SIS()
+    SIS()
     #GRM()
-    Total()
+    #Total()
    
