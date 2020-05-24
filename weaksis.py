@@ -4,7 +4,6 @@ Created on Thu May 14 20:54:35 2020
 
 @author: tcf12
 """
-
 #--weak lensing from SIS density profile----------
 import numpy as np
 from scipy import integrate 
@@ -167,26 +166,21 @@ class weaksis(object):
      yv  = yv*pi/180.0/60.0
      dl  = self.Da(self.zl)
      ds  = self.Da(self.zs)
-     nx    = len(xi1)
-     ny    = len(xi2)
-     nrbin = 30
+     nrbin = 200
      Sigc  = fac*ds/(dl*(ds-dl))/(1.0+self.zl)/(1.0+self.zl)
-     esd2d = Sigc*self.TotalKappa(xi1,xi2,phi,False)
+     kap2d = Sigc*self.TotalKappa(xi1,xi2,phi,False)
      Rlow  = 0.0
      Rhig  = np.max(dl*xi1*pi/180.0/60.0)
      step  = Rhig/float(nrbin)
-     Rp2d  = dl*(np.sqrt(xi1**2+xi2**2)*pi/180.0/60.0)
+     Rp2d  = dl*np.sqrt(xv**2+yv**2)
      Rp    = np.zeros(nrbin)
      esd   = np.zeros(nrbin)
-     esdh  = np.zeros(nrbin)
      error = np.zeros(nrbin)
      for i in range(nrbin):
 	 ixa   = Rp2d>=Rlow+step*float(i)
 	 ixb   = Rp2d<=Rlow+step*float(i+1)
-	 Rp[i] = 0.5*(Rlow+step*float(i)+Rlow+step*float(i+1))
-	 esd[i]= np.mean(esd2d[ixb])-np.mean(esd2d[ixa&ixb])
-	 #esd[i]= np.mean(esd2d[ixa&ixb])
-	 print(Rp[i],esd[i])
+	 Rp[i] = 0.5*(2.0*Rlow+step*float(i)+step*float(i+1))
+	 esd[i]= np.mean(kap2d[ixb])-np.mean(kap2d[ixa&ixb])
      res = {'Rp':Rp,'ESD':esd}
      return res
   def TotalShear(self,xi1,xi2,phi,noise):
