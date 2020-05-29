@@ -7,7 +7,8 @@ Created on Thu May 14 20:54:35 2020
 #--weak lensing from SIS density profile----------
 import numpy as np
 from scipy import integrate 
-
+import galsim as gs
+from scipy.ndimage import shift
 # Basic Parameters---------------------------
 h       = 1.0
 w       = -1.0
@@ -29,17 +30,18 @@ Ok0    = 1.0-Om0-Ol0
 rho_crt0= 2.78e11                # M_sun Mpc^-3 *h*h 
 rho_bar0= rho_crt0*Om0       # M_sun Mpc^-3 *h*h
 pi      = np.pi
-lamda =0.5
+#lamda =0.1
 fac   =(vc*vc*ckg)/(4.*pi*Gg*ckm)
 
-shapen     = 0.05
-ngdens     = 500.0
+shapen     = 0.3
+ngdens     = 50.0
 class weaksis(object):
-  def __init__(self,vrot=None,vdis=None,zl=None,zs=None):
+  def __init__(self,vrot=None,vdis=None,lam=None,zl=None,zs=None):
      self.vrot=vrot
      self.vdis=vdis
      self.zl  = zl
      self.zs  = zs
+     self.lam = lam
 #----cosmology from Nan Li-------------------------------
   def efunclcdm(self,x):
      res = 1.0/np.sqrt(Om0*(1.0+x)**3+Ok0*(1.0+x)**2+Ol0*(1.0+x)**(3*(1.0+w)))
@@ -57,6 +59,37 @@ class weaksis(object):
      res = self.Dh()*integrate.romberg(self.efunclcdm, 0, x)
      return res
 #----end of cosmology functions---------------------------------
+  def kaisersquires(self,xi1,xi2,gamma,noise,galsim):
+     nn    = len(xi1)
+     the   = np.max(xi1)*pi*2.0/180.0/60.0
+     xv    = np.arange(0,nn,dtype=int)
+     yv    = np.arange(0,nn,dtype=int)
+     l1,l2 = np.meshgrid(xv,yv)
+     #l1    = np.roll(l1-float(nn/2-0.5),-int(nn/2-0.5),axis=0)
+     #l2    = np.roll(l2-float(nn/2-0.5),-int(nn/2-0.5),axis=0)
+     l1    = shift(l1-float(nn/2.0-0.5),[(0.5-nn/2.0),(0.5-nn/2.0)],mode='wrap',order=5)
+     l2    = shift(l2-float(nn/2.0-0.5),[(0.5-nn/2.0),(0.5-nn/2.0)],mode='wrap',order=5)
+     l1    = 2.0*pi*l1/the 
+     l2    = 2.0*pi*l2/the 
+     gm1   = gamma['h_1']
+     gm2   = gamma['h_2']
+     fgm1  = np.fft.fft2(gm1)
+     fgm2  = np.fft.fft2(gm2)
+     fkape = ((l1**2-l2**2)*fgm1+(2.0*l1*l2)*fgm2)/(l1*l1+l2*l2)
+     fkapb = ((l1**2-l2**2)*fgm1+(2.0*l1*l2)*fgm2)*0/(l1*l1+l2*l2)
+     fkape[0,0] = 0.0
+     kappe = np.fft.ifft2(fkape)
+     kappb = np.fft.ifft2(fkapb)
+     kappa = [kappe.real,kappb.real]
+     ns1   = np.random.normal(loc=0.0,scale=shapen,size=(nn,nn))
+     ns2   = np.random.normal(loc=0.0,scale=shapen,size=(nn,nn))
+     if galsim==True:
+       kappa = gs.lensing_ps.kappaKaiserSquires(gm1,gm2)
+
+     if noise==True:
+       gm1 = gm1+ns1
+       gm2 = gm2+ns2
+     return kappa
   def sisESD(self,xi,noise):
      nbins = len(xi)
      dl    = self.Da(self.zl)
@@ -79,6 +112,7 @@ class weaksis(object):
       dl  = self.Da(self.zl)
       ds  = self.Da(self.zs)
       xi0=4*pi*(self.vdis*self.vdis)*dl*(ds-dl)/(vc*vc)/ds
+      #print(2.0*self.vdis**2*ckg)*xi0/(Gg*ckm)
       return xi0
 
   def sisKappa(self,xi1,xi2,noise):
@@ -115,12 +149,13 @@ class weaksis(object):
      return {'f_1':gm1,'f_2':gm2}
  
   def GRMKappa(self,xi1,xi2,phi):
+     lamda  = self.lam
      xv,yv  = np.meshgrid(xi1,xi2)
      xv  = xv*pi/180.0/60.0
      yv  = yv*pi/180.0/60.0
      dl  = self.Da(self.zl)
      Rsis= self.Xi0()
-     w = 9*lamda*self.vdis/Rsis
+     w = 9*lamda*self.vdis/Rsis   
      w1=w*np.cos(phi)
      w2=w*np.sin(phi)
      noise=False
@@ -129,6 +164,7 @@ class weaksis(object):
      return kap1 
   
   def GRMShear(self,xi1,xi2,phi):
+     lamda  = self.lam
      xv,yv  = np.meshgrid(xi1,xi2)
      xv  = xv*pi/180.0/60.0
      yv  = yv*pi/180.0/60.0
@@ -151,6 +187,7 @@ class weaksis(object):
      GRkappa= self.GRMKappa(xi1,xi2,phi)
      ngals= int(np.round(((4.0*np.max(xi1)*np.max(xi2))/float(nx)/float(ny))*ngdens))
      Totalkappa=kappa+GRkappa
+     #print(3.0*2.0*self.vdis**2*ckg/Gg/ckm)
      if noise==False:
        Totalkappa = Totalkappa
      if noise==True:
@@ -166,7 +203,7 @@ class weaksis(object):
      yv  = yv*pi/180.0/60.0
      dl  = self.Da(self.zl)
      ds  = self.Da(self.zs)
-     nrbin = 200
+     nrbin = 700
      Sigc  = fac*ds/(dl*(ds-dl))/(1.0+self.zl)/(1.0+self.zl)
      kap2d = Sigc*self.TotalKappa(xi1,xi2,phi,False)
      Rlow  = 0.0
@@ -187,7 +224,7 @@ class weaksis(object):
      
     nx  = len(xi1)
     ny  = len(xi2)
-    gmsis=self.sisShear(xi1,xi2,False)
+    gmsis=self.sisShear(xi1,xi2,noise)
     gmsis1=gmsis['f_1']
     gmsis2=gmsis['f_2']
     
