@@ -44,6 +44,7 @@ def plot_shears_kappa(kappa,shear1,shear2,nn):
 
     plt.xlim(0,nn)
     plt.ylim(0,nn)
+
 def selectregions(kap):
   nn  = len(kap[:,0])
   for i in range(nn):
@@ -76,32 +77,49 @@ def stackedsims(vrot,vdis,xi1,xi2,nstack):
   return kap/nstack
 
 def lambda_deltakappa_plot(xi1,xi2,vrot,vdis,phi,zl,zs,noise):
-  lam  = np.array([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8])
-  vd   = np.array([200.0,250.0,300.0,350.0,400.0])
+  #lam  = np.array([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8])
+  #vd   = np.array([200.0,250.0,300.0,350.0,400.0])
+  lam  = np.linspace(0.1,0.8,500)
+  vd   = np.linspace(150.0,400.0,500)
   color= np.array(['y','g','b','pink','m'])
   deltk= np.zeros(len(lam))
+  coeff= zeros((500,2))
   plt.figure()
   for j in range(len(vd)):
     for i in range(len(lam)):
       wlsis= wl.weaksis(vrot,vd[j],lam[i],zl,zs)
-      kap  = wlsis.TotalKappa(xi1,xi2,phi,noise)
-      kap  = selectregions(kap)
-      klow = kap['klow']
-      khig = kap['khig']
-      kall = kap['all']
+      kap  = wlsis.GRMKappa(xi1,xi2,phi)
+      #kap  = wlsis.TotalKappa(xi1,xi2,phi,noise)
+      #kap  = selectregions(kap)
+      #klow = kap['klow']
+      #khig = kap['khig']
+      #kall = kap['all']
+      nn   = len(kap[:,0])
+      khig = kap[0:nn/2,:]
+      klow = kap[nn/2:nn,:]
+      kall = kap
       #if j == 4 and i==6:
 #	 cbar=plt.imshow(kall,interpolation='nearest')
 #	 cbar.set_label(r'$\kappa$')
 #	 colorbar()
 #	 plt.show()
-      deltk[i] = np.mean(khig)-np.mean(klow)
-    plt.plot(lam,deltk,'-',linewidth=2.5,color=color[j],\
-             label=r'$\sigma_v=$'+str(vd[j]))
-  plt.xlabel(r'$\mathrm{\lambda}$',fontsize=15)
-  plt.ylabel(r'$\mathrm{\delta\kappa}$',fontsize=15)
-  plt.xlim(0.1,0.8)
-  plt.legend(loc='upper left')
-  plt.show()
+      deltk[i]= np.mean(khig)-np.mean(klow)
+    coeff[j,:]= np.polyfit(lam,deltk,1)
+    #print '------First-----------------------'
+    print j, coeff[j,0],vd[j],coeff[j,1]
+    #plt.plot(lam,deltk,'ro',ms=5,linewidth=2.5,\
+    #         label=r'$\sigma_v=$'+str(vd[j]))
+    #plt.plot(lam,lam*2.832819e-5*vd[j],'k-')
+  secon = np.polyfit(vd,coeff[:,0],1)
+  print secon
+  #plt.plot(vd,coeff[:,0],'ro',ms=10)
+  #plt.plot(vd,secon[0]*vd+secon[1],'k-',ms=10)
+  #plt.xlabel(r'$\mathrm{\lambda}$',fontsize=15)
+  #plt.ylabel(r'$\mathrm{\delta\kappa}$',fontsize=15)
+  #plt.xlim(0.1,0.8)
+  #plt.legend(loc='upper left')
+  #plt.show()
+  #coeffs = np.polyfit(lam,deltk)
   return 0
 #----------------------------------------------------
 def main():
@@ -129,23 +147,23 @@ def main():
   #lamvsdkapp=lambda_deltakappa_plot(xi1,xi2,vrot,vdis,phi,zl,zs,noise)
   #---end lambda vs delta_kappa relation without noise---------
   #---III:test Kaiser Squires gamma to kappa conversion-----
-  wlsis= wl.weaksis(vrot,vdis,lam,zl,zs)
-  kap  = wlsis.TotalKappa(xi1,xi2,phi,noise)
-  gamma= wlsis.TotalShear(xi1,xi2,phi,noise)
-  ke,kb = wlsis.kaisersquires(xi1,xi2,gamma,noise,galsim)
+  #wlsis= wl.weaksis(vrot,vdis,lam,zl,zs)
+  #kap  = wlsis.TotalKappa(xi1,xi2,phi,noise)
+  #gamma= wlsis.TotalShear(xi1,xi2,phi,noise)
+  #ke,kb = wlsis.kaisersquires(xi1,xi2,gamma,noise,galsim)
 
-  plt.imshow(ke,interpolation='nearest')
-  plt.colorbar()
-  plt.show()
-  plt.imshow(kap,interpolation='nearest')
-  plt.colorbar()
-  plt.show()
+  #plt.imshow(ke,interpolation='nearest')
+  #plt.colorbar()
+  #plt.show()
+  #plt.imshow(kap,interpolation='nearest')
+  #plt.colorbar()
+  #plt.show()
   #---end of Kaiser Squires test---------------------
   #---IV:test filters(Gauss,Wiener,& maximum entropy)-----
   #---end of filters(Gauss,Wiener,& maximum entropy)-----
-  #---V:stacked simulation------------------------
-  #kap = stackedsims(vrot,vdis,xi1,xi2,nstack)
-  #-----end ofstacked simulation------------------------
+  ---V:stacked simulation------------------------
+  kap = stackedsims(vrot,vdis,xi1,xi2,nstack)
+  -----end ofstacked simulation------------------------
   #---VI:select_regions------------------------------
   #kap   = selectregions(kap)
   #klow  = kap[nn/2:nn,:]
