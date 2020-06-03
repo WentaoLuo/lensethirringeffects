@@ -62,28 +62,45 @@ def selectregions(kap):
   klow  = kap[nn/2:nn,:]
   khig  = kap[0:nn/2,:]
   return {'all':kap,'khig':khig,'klow':klow}
-def stackedsims(vrot,vdis,xi1,xi2,nstack):
+
+def stackedsims(vdis,xi1,xi2,nstack,sim_id):
   nx = len(xi1) 
   ny = len(xi2) 
   kap= np.zeros((nx,ny))
+  zl  = 0.2
+  zs  = 0.4
+  vrot= 100.0
   for i in range(nstack):
-     phi = 0
-     zl  = 0.2
-     zs  = 0.4
+     if sim_id==1:
+       phi = 0.0
+       lam = 0.1
+     if sim_id==2:
+       phi = 0.0
+       lam = 0.1+np.random.normal(loc=0.0,scale=0.5)
+     if sim_id==3:
+       phi = 0.0+np.random.normal(loc=0.0,scale=0.05)
+       lam = 0.1
+     if sim_id==4:
+       phi = 0.0+np.random.normal(loc=0.0,scale=0.05)
+       lam = 0.1+np.random.normal(loc=0.0,scale=0.5)
+     if sim_id==5:
+       phi = 0.0+np.random.normal(loc=0.0,scale=0.05)
+       lam = 0.05+np.random.normal(loc=0.0,scale=0.5)
      noise= True
-     wlsis= wl.weaksis(vrot,vdis,zl,zs)
-     gamma= wlsis.TotalShear(xi1,xi2,phi,noise)
-     kap  = kap+wlsis.kaisersquires(xi1,xi2,gamma,noise)
+     wlsis= wl.weaksis(vrot,vdis,lam,zl,zs)
+     #gamma= wlsis.TotalShear(xi1,xi2,phi,noise)
+     #kap  = kap+wlsis.kaisersquires(xi1,xi2,gamma,noise)
+     kap  = kap+wlsis.TotalKappa(xi1,xi2,phi,noise)
   return kap/nstack
 
 def lambda_deltakappa_plot(xi1,xi2,vrot,vdis,phi,zl,zs,noise):
   #lam  = np.array([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8])
   #vd   = np.array([200.0,250.0,300.0,350.0,400.0])
-  lam  = np.linspace(0.1,0.8,500)
-  vd   = np.linspace(150.0,400.0,500)
-  color= np.array(['y','g','b','pink','m'])
+  lam  = np.linspace(0.01,0.5,8)
+  vd   = np.linspace(200.0,1300.0,8)
+  color= np.array(['y','g','b','pink','m','cyan','k','r'])
   deltk= np.zeros(len(lam))
-  coeff= zeros((500,2))
+  coeff= zeros((8,2))
   plt.figure()
   for j in range(len(vd)):
     for i in range(len(lam)):
@@ -106,25 +123,25 @@ def lambda_deltakappa_plot(xi1,xi2,vrot,vdis,phi,zl,zs,noise):
       deltk[i]= np.mean(khig)-np.mean(klow)
     coeff[j,:]= np.polyfit(lam,deltk,1)
     #print '------First-----------------------'
-    print j, coeff[j,0],vd[j],coeff[j,1]
-    #plt.plot(lam,deltk,'ro',ms=5,linewidth=2.5,\
-    #         label=r'$\sigma_v=$'+str(vd[j]))
+    #print j, coeff[j,0],vd[j],coeff[j,1]
+    plt.plot(lam,deltk,'-',ms=5,linewidth=2.5,\
+             color=color[j],label=r'$\sigma_v=$'+str(np.round(vd[j],1)))
     #plt.plot(lam,lam*2.832819e-5*vd[j],'k-')
-  secon = np.polyfit(vd,coeff[:,0],1)
-  print secon
+  #secon = np.polyfit(vd,coeff[:,0],1)
+  #print secon
   #plt.plot(vd,coeff[:,0],'ro',ms=10)
   #plt.plot(vd,secon[0]*vd+secon[1],'k-',ms=10)
-  #plt.xlabel(r'$\mathrm{\lambda}$',fontsize=15)
-  #plt.ylabel(r'$\mathrm{\delta\kappa}$',fontsize=15)
-  #plt.xlim(0.1,0.8)
-  #plt.legend(loc='upper left')
-  #plt.show()
+  plt.xlabel(r'$\mathrm{\lambda}$',fontsize=15)
+  plt.ylabel(r'$\mathrm{\delta\kappa}$',fontsize=15)
+  plt.xlim(0.01,0.5)
+  plt.legend(loc='upper left')
+  plt.show()
   #coeffs = np.polyfit(lam,deltk)
   return 0
 #----------------------------------------------------
 def main():
   xi  = np.linspace(0.02,10,50)
-  nn  = 8 
+  nn  = 8
   ang = 64
   galsim = False
   xi1 = np.linspace(-ang,ang,nn)
@@ -136,10 +153,8 @@ def main():
   #print(np.roll(l1-7.5,-7,axis=1)[0,:])
   #print(np.roll(l2-7.5,-7,axis=0)[0,:])
   #--- end of Test k coordinates----------------------------------
-  vdis= 300.0
+  vdis= 1300.0
   vrot= 100.0
-  lam = 0.5
-  phi= 0
   zl  = 0.2
   zs  = 0.4
   noise = False
@@ -161,18 +176,19 @@ def main():
   #---end of Kaiser Squires test---------------------
   #---IV:test filters(Gauss,Wiener,& maximum entropy)-----
   #---end of filters(Gauss,Wiener,& maximum entropy)-----
-  ---V:stacked simulation------------------------
-  kap = stackedsims(vrot,vdis,xi1,xi2,nstack)
-  -----end ofstacked simulation------------------------
-  #---VI:select_regions------------------------------
-  #kap   = selectregions(kap)
-  #klow  = kap[nn/2:nn,:]
-  #khig  = kap[0:nn/2,:]
-  #ih    = np.abs(khig)>0.0
-  #il    = np.abs(klow)>0.0
-  #print(np.mean(khig[ih]/nstack),np.std(khig[ih]/nstack))
-  #print(np.mean(klow[il]/nstack),np.std(klow[il]/nstack))
-  #--end select region ----------------------------------
+  #---V:stacked simulation------------------------
+  sim_id=5
+  nstack=100
+  kap = stackedsims(vdis,xi1,xi2,nstack,sim_id)
+  khig  = kap[nn/2:nn,:]
+  klow  = kap[0:nn/2,:]
+  print(np.mean(khig),np.std(khig))
+  print(np.mean(klow),np.std(klow))
+  print(np.mean(klow)-np.mean(khig),np.std(khig)/np.sqrt(nstack))
+  plt.imshow(kap,interpolation='nearest')
+  plt.colorbar()
+  plt.show()
+  #-----end ofstacked simulation------------------------
 
 if __name__=="__main__":
     main()

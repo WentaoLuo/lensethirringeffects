@@ -7,7 +7,7 @@ Created on Thu May 14 20:54:35 2020
 #--weak lensing from SIS density profile----------
 import numpy as np
 from scipy import integrate 
-import galsim as gs
+#import galsim as gs
 from scipy.ndimage import shift
 # Basic Parameters---------------------------
 h       = 1.0
@@ -30,7 +30,6 @@ Ok0    = 1.0-Om0-Ol0
 rho_crt0= 2.78e11                # M_sun Mpc^-3 *h*h 
 rho_bar0= rho_crt0*Om0       # M_sun Mpc^-3 *h*h
 pi      = np.pi
-#lamda =0.1
 fac   =(vc*vc*ckg)/(4.*pi*Gg*ckm)
 
 shapen     = 0.3
@@ -43,7 +42,7 @@ class weaksis(object):
      self.zs  = zs
      self.lam = lam
 #----cosmology from Nan Li-------------------------------
-  def efunclcdm(self,x):
+  def efuncdm(self,x):
      res = 1.0/np.sqrt(Om0*(1.0+x)**3+Ok0*(1.0+x)**2+Ol0*(1.0+x)**(3*(1.0+w)))
      return res
   def Hz(self,x):
@@ -56,7 +55,7 @@ class weaksis(object):
      res = vc/H0
      return res
   def Da(self,x):
-     res = self.Dh()*integrate.romberg(self.efunclcdm, 0, x)
+     res = self.Dh()*integrate.romberg(self.efuncdm,0,x)/(1.0+x)
      return res
 #----end of cosmology functions---------------------------------
   def kaisersquires(self,xi1,xi2,gamma,noise,galsim):
@@ -111,6 +110,8 @@ class weaksis(object):
   def Xi0(self,):
       dl  = self.Da(self.zl)
       ds  = self.Da(self.zs)
+      #dl  = cosmo.comoving_distance(self.zl).value
+      #ds  = cosmo.comoving_distance(self.zs).value
       xi0=4*pi*(self.vdis*self.vdis)*dl*(ds-dl)/(vc*vc)/ds
       #print(2.0*self.vdis**2*ckg)*xi0/(Gg*ckm)
       return xi0
