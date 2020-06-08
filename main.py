@@ -69,6 +69,8 @@ def stackedsims(vdis,xi1,xi2,nstack,sim_id):
   kap= np.zeros((nx,ny))
   zl  = 0.2
   zs  = 0.4
+  val1= np.zeros(nstack)
+  val2= np.zeros(nstack)
   vrot= 100.0
   for i in range(nstack):
      if sim_id==1:
@@ -85,56 +87,88 @@ def stackedsims(vdis,xi1,xi2,nstack,sim_id):
        lam = 0.1+np.random.normal(loc=0.0,scale=0.5)
      if sim_id==5:
        phi = 0.0+np.random.normal(loc=0.0,scale=0.05)
-       lam = 0.05+np.random.normal(loc=0.0,scale=0.5)
+       lam = 0.1+np.random.normal(loc=0.0,scale=0.05)
      noise= True
      wlsis= wl.weaksis(vrot,vdis,lam,zl,zs)
      #gamma= wlsis.TotalShear(xi1,xi2,phi,noise)
      #kap  = kap+wlsis.kaisersquires(xi1,xi2,gamma,noise)
      kap  = kap+wlsis.TotalKappa(xi1,xi2,phi,noise)
-  return kap/nstack
+     tmp  = wlsis.TotalKappa(xi1,xi2,phi,noise)
+     khig   = tmp[nx/2:nx,:]
+     klow   = tmp[0:nx/2,:]
+     val1[i]= np.mean(klow)
+     val2[i]= np.mean(khig)
+  return {'meankappa':kap/nstack,'val1':val1,'val2':val2}
 
 def lambda_deltakappa_plot(xi1,xi2,vrot,vdis,phi,zl,zs,noise):
   #lam  = np.array([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8])
   #vd   = np.array([200.0,250.0,300.0,350.0,400.0])
-  lam  = np.linspace(0.01,0.5,8)
-  vd   = np.linspace(200.0,1300.0,8)
+  lam  = np.linspace(0.01,0.5,9)
+  vd   = np.linspace(400.0,1000.0,8)
+  #vd   = np.linspace(200.0,1300.0,90)
+  phi  = np.linspace(-90,90,180)
   color= np.array(['y','g','b','pink','m','cyan','k','r'])
-  deltk= np.zeros(len(lam))
+  #deltk= np.zeros(len(lam))
+  deltk= np.zeros(len(phi))
   coeff= zeros((8,2))
   plt.figure()
+  #wlsis= wl.weaksis(vrot,1000,0.2,zl,zs)
+  #kap0  = wlsis.GRMKappa(xi1,xi2,0.0*phi[0]*pi/180.)
+  #nn    = len(kap0[:,0])
+  #khig0 = kap0[0:nn/2,:]
+  #klow0 = kap0[nn/2:nn,:]
+  #deltk0= np.mean(khig0)-np.mean(klow0)
   for j in range(len(vd)):
-    for i in range(len(lam)):
-      wlsis= wl.weaksis(vrot,vd[j],lam[i],zl,zs)
-      kap  = wlsis.GRMKappa(xi1,xi2,phi)
+  #for j in range(1):
+    #for i in range(len(lam)):
+    for i in range(1):
+      for k in range(len(phi)):
+        wlsis= wl.weaksis(vrot,vd[j],0.2,zl,zs)
+        kap0  = wlsis.GRMKappa(xi1,xi2,0.0*phi[0]*pi/180.)
+        nn    = len(kap0[:,0])
+        khig0 = kap0[0:nn/2,:]
+        klow0 = kap0[nn/2:nn,:]
+        deltk0= np.mean(khig0)-np.mean(klow0)
+        #wlsis= wl.weaksis(vrot,vd[j],lam[i],zl,zs)
+        #kap  = wlsis.GRMKappa(xi1,xi2,phi[k]*pi/180.)
+        wlsis= wl.weaksis(vrot,vd[j],0.2,zl,zs)
+        kap  = wlsis.GRMKappa(xi1,xi2,phi[k]*pi/180.)
       #kap  = wlsis.TotalKappa(xi1,xi2,phi,noise)
       #kap  = selectregions(kap)
       #klow = kap['klow']
       #khig = kap['khig']
       #kall = kap['all']
-      nn   = len(kap[:,0])
-      khig = kap[0:nn/2,:]
-      klow = kap[nn/2:nn,:]
-      kall = kap
+        #nn   = len(kap[:,0])
+        khig = kap[0:nn/2,:]
+        klow = kap[nn/2:nn,:]
+        kall = kap
+        deltk[k]= (np.mean(khig)-np.mean(klow))/deltk0
       #if j == 4 and i==6:
 #	 cbar=plt.imshow(kall,interpolation='nearest')
 #	 cbar.set_label(r'$\kappa$')
 #	 colorbar()
 #	 plt.show()
-      deltk[i]= np.mean(khig)-np.mean(klow)
-    coeff[j,:]= np.polyfit(lam,deltk,1)
+        #deltk[i]= np.mean(khig)-np.mean(klow)
+    #coeff[j,:]= np.polyfit(lam,deltk,1)
     #print '------First-----------------------'
     #print j, coeff[j,0],vd[j],coeff[j,1]
-    plt.plot(lam,deltk,'-',ms=5,linewidth=2.5,\
-             color=color[j],label=r'$\sigma_v=$'+str(np.round(vd[j],1)))
+    #plt.plot(lam,deltk,'-',ms=5,linewidth=2.5,\
+    #         color=color[j],label=r'$\sigma_v=$'+str(np.round(vd[j],1)))
     #plt.plot(lam,lam*2.832819e-5*vd[j],'k-')
   #secon = np.polyfit(vd,coeff[:,0],1)
   #print secon
+    plt.plot(phi,deltk,'b-',linewidth=3)
+    #plt.plot(phi,np.cos(phi*pi/180.0),'r.',ms=5)
   #plt.plot(vd,coeff[:,0],'ro',ms=10)
   #plt.plot(vd,secon[0]*vd+secon[1],'k-',ms=10)
-  plt.xlabel(r'$\mathrm{\lambda}$',fontsize=15)
-  plt.ylabel(r'$\mathrm{\delta\kappa}$',fontsize=15)
-  plt.xlim(0.01,0.5)
-  plt.legend(loc='upper left')
+  #plt.xlabel(r'$\mathrm{\lambda}$',fontsize=15)
+  #plt.ylabel(r'$\mathrm{\delta\kappa}$',fontsize=15)
+  #plt.xlim(0.01,0.5)
+  plt.xlabel(r'$\mathrm{\delta\theta}$',fontsize=15)
+  plt.ylabel(r'$\mathrm{\nu(\delta\theta)}$',fontsize=15)
+  plt.xlim(-90,90)
+  plt.ylim(0,1)
+  #plt.legend(loc='upper left')
   plt.show()
   #coeffs = np.polyfit(lam,deltk)
   return 0
@@ -157,6 +191,7 @@ def main():
   vrot= 100.0
   zl  = 0.2
   zs  = 0.4
+  phi = 0.0
   noise = False
   #---II:lambda vs delta_kappa relation without noise---------
   #lamvsdkapp=lambda_deltakappa_plot(xi1,xi2,vrot,vdis,phi,zl,zs,noise)
@@ -177,16 +212,23 @@ def main():
   #---IV:test filters(Gauss,Wiener,& maximum entropy)-----
   #---end of filters(Gauss,Wiener,& maximum entropy)-----
   #---V:stacked simulation------------------------
-  sim_id=5
-  nstack=100
-  kap = stackedsims(vdis,xi1,xi2,nstack,sim_id)
-  khig  = kap[nn/2:nn,:]
-  klow  = kap[0:nn/2,:]
-  print(np.mean(khig),np.std(khig))
-  print(np.mean(klow),np.std(klow))
-  print(np.mean(klow)-np.mean(khig),np.std(khig)/np.sqrt(nstack))
-  plt.imshow(kap,interpolation='nearest')
-  plt.colorbar()
+  sim_id= 5 
+  nstack= 500
+  struc    = stackedsims(vdis,xi1,xi2,nstack,sim_id)
+  kap     = struc['meankappa']
+  val1    = struc['val1']
+  val2    = struc['val2']
+  #khig   = kap[nn/2:nn,:]
+  #klow   = kap[0:nn/2,:]
+  #val1[i]= np.mean(klow)
+  #val2[i]= np.mean(khig)
+  #print(np.mean(khig),np.std(khig))
+  #print(np.mean(klow),np.std(klow))
+  print(np.mean(val1)-np.mean(val2),np.sqrt(np.var(val1)+np.var(val2)))
+  plt.hist(val1,20)
+  plt.hist(val2,20)
+  #plt.imshow(kap,interpolation='nearest')
+  #plt.colorbar()
   plt.show()
   #-----end ofstacked simulation------------------------
 
