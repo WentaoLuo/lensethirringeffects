@@ -46,7 +46,7 @@ class weaksis(object):
      res = 1.0/np.sqrt(Om0*(1.0+x)**3+Ok0*(1.0+x)**2+Ol0*(1.0+x)**(3*(1.0+w)))
      return res
   def Hz(self,x):
-     res = H0/self.efunclcdm(x)
+     res = H0/self.efuncdm(x)
      return res
   def a(self,x):
      res = 1.0/(1.0+x)
@@ -108,12 +108,11 @@ class weaksis(object):
      res={'Rp':theta,'ESD':tmp,'ERROR':error*Sigc}
      return res 
   def Xi0(self,):
-      dl  = self.Da(self.zl)
-      ds  = self.Da(self.zs)
-      #dl  = cosmo.comoving_distance(self.zl).value
-      #ds  = cosmo.comoving_distance(self.zs).value
-      xi0=4*pi*(self.vdis*self.vdis)*dl*(ds-dl)/(vc*vc)/ds
+      #dl  = self.Da(self.zl)
+      #ds  = self.Da(self.zs)
+      #xi0=4*pi*(self.vdis*self.vdis)*dl*(ds-dl)/(vc*vc)/ds
       #print(2.0*self.vdis**2*ckg)*xi0/(Gg*ckm)
+      xi0  = 2.0*self.vdis/np.sqrt(200.0)/self.Hz(self.zl)
       return xi0
 
   def sisKappa(self,xi1,xi2,noise):
